@@ -1,0 +1,530 @@
+================
+Guillermo Moran
+Assignment 7
+April 26
+================
+
+================
+CONSOLE OUTPUT
+================
+
+****  BEGIN OUTPUT for willie_m5296  ****
+SUCCESS number of solutions for 8 queens is 92
+SUCCESS number of solutions for 6 queens is 4
+SUCCESS number of solutions for 7 queens is 40
+****  END OUTPUT for willie_m5296  ****
+****  BEGIN OUTPUT for willie_m5296  ****
+SUCCESS: RuntimeException -- number of queens: 25  is out of range must be between 4 and 12
+SUCCESS: RuntimeException -- number of queens: 3  is out of range must be between 4 and 12
+SUCCESS: RuntimeException -- number of queens: 0  is out of range must be between 4 and 12
+****  END OUTPUT for willie_m5296  ****
+****  BEGIN OUTPUT for willie_m5296  ****
+SUCCESS: RuntimeException resetSolver must receive number of queens
+between 4 and 12 inclusive when resetting received: 13 as number of queens.
+SUCCESS: RuntimeException resetSolver must receive number of queens
+between 4 and 12 inclusive when resetting, received: 3 as number of queens.
+****  END OUTPUT for willie_m5296  ****
+
+================
+QueensViewImpl.java
+================
+
+package queens;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+
+public class QueensViewImpl extends JPanel {
+	
+	//Buttons
+	private JButton startButton;
+	private JButton stopButton;
+	private JButton resetButton;
+	
+	private JComboBox numQueensBox;
+	
+	private JTextField solutionsTextArea;
+	private String solutionsText;
+	
+	private JPanel buttonPanel;
+	
+	private Thread queensThread;
+	private ChangeListener changeListener;
+	
+	//private int numQueens;
+	MyChessBoard chessBoard;
+	QueensSolverEngine engine;
+	
+	
+	public QueensViewImpl(QueensSolverEngine queenEngine) {
+		
+		super();
+		this.setPreferredSize(new Dimension(QueenFrame.PANEL_WIDTH-20, QueenFrame.PANEL_HEIGHT - 100));
+		this.setLayout(new BorderLayout());
+		this.engine = queenEngine;
+		
+		changeListener = new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				update();
+			}
+		};
+		engine.addChangeListener(changeListener);
+		init();
+	}
+	
+	public void init() {
+		
+		this.solutionsText = "Solutions: 0";
+		
+		this.startButton = new JButton("Start");
+		this.stopButton = new JButton("Stop");
+		this.resetButton = new JButton("Reset");
+		
+		setupButtonListeners();
+		
+        String []queens = {"4", "5", "6", "7", "8", "9", "10", "11", "12"};
+        this.numQueensBox = new JComboBox(queens);
+        this.numQueensBox.setSelectedIndex(0);
+		
+		this.solutionsTextArea = new JTextField(solutionsText);
+		this.solutionsTextArea.setEditable(false);
+		this.solutionsTextArea.setBackground(null);
+		//solutionsTextArea.setFont(new Font("default", Font.BOLD, 16));
+		
+		this.buttonPanel = new JPanel();
+		this.chessBoard = new MyChessBoard();
+		
+		
+		this.buttonPanel.setLayout(new GridLayout(1,4));
+		buttonPanel.add(startButton);
+		buttonPanel.add(stopButton);
+		buttonPanel.add(resetButton);
+		buttonPanel.add(numQueensBox);
+		buttonPanel.add(solutionsTextArea);
+
+		
+		this.add(buttonPanel, BorderLayout.NORTH);
+		this.add(chessBoard, BorderLayout.CENTER);
+	
+		
+	}
+	
+	private int getNumQueens() {
+		int nQueens = Integer.parseInt((String)numQueensBox.getSelectedItem());
+		return nQueens;
+
+	}
+	
+	private void setupButtonListeners () {
+		
+		startButton.addActionListener(new ActionListener() {
+			
+			public void actionPerformed (ActionEvent e) {
+				if (queensThread == null || !queensThread.isAlive()) {
+					queensThread = new Thread(new Runnable()  {
+						public void run () {
+							int nq = getNumQueens();
+							engine.resetSolver(nq);
+							chessBoard.setPosition(engine.getQueenPositions(), nq);
+							update();
+							engine.solveAll();
+						}
+					});
+					queensThread.start();
+				}
+			}
+		});
+		
+		stopButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				engine.setStopFlag(true);
+			}
+		});
+		
+		resetButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				int nq = getNumQueens();
+				if (queensThread != null || queensThread.isAlive()) {
+					engine.setStopFlag(true);
+					chessBoard.setPosition(engine.getQueenPositions(), nq);
+				    numQueensBox.setSelectedIndex(0);
+					
+					solutionsText = "Solutions: 0";
+					solutionsTextArea.setText(solutionsText);
+					update();
+					
+				}
+			}
+		});
+
+	}
+					
+	
+	private void update() {
+		try {
+			Thread.sleep(130);
+		}
+		catch (InterruptedException e) {
+			
+		}
+		solutionsText = "Solutions: " + Integer.toString(engine.getNumSolutions());
+		solutionsTextArea.setText(solutionsText);
+		
+		chessBoard.setPosition(engine.getQueenPositions(), getNumQueens());
+		this.repaint();
+		chessBoard.repaint();
+	}
+	
+	
+	
+	private class MyChessBoard extends JPanel {
+
+		private int position[];  //array of ints containing column position of queens in each row (index)
+		private int nq;
+		
+		private Image img;
+		
+		private static final int MY_WIDTH = QueenFrame.PANEL_WIDTH - 200;
+		private static final int MY_HEIGHT = QueenFrame.PANEL_HEIGHT - 50;
+
+		public MyChessBoard() {
+			
+			super();
+			
+			//this.img = new ImageIcon("./queens/queen.png").getImage();
+			this.img = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/queens/queen.png"));
+			
+			this.setPreferredSize(new Dimension(MY_WIDTH, MY_HEIGHT));
+			this.nq = 4;
+			this.position = new int[nq];
+			for (int i = 0; i < nq; i++) {
+				position[i] = -1;
+			}
+		
+	 	}
+		
+		public void setPosition(int pos[], int numqueens) {
+			this.position = pos;
+			this.nq = numqueens;
+		}
+		
+		public void paintComponent(Graphics g) {
+			
+			super.paintComponent(g);
+			int xpos = 0;
+			int ypos = 0;
+			int width = MY_WIDTH/nq;
+			
+			for (int i = 0; i < nq; i++) {
+				
+				for (int k = 0; k < nq; k++) {
+					
+					if ((i+k) % 2 == 0) {  //even
+						g.setColor(Color.BLACK);
+					}
+					else {
+						g.setColor(Color.WHITE);
+					}
+					g.fillRect(xpos, ypos, width, width);
+					
+					
+					
+					if (this.position[i] == k) {
+						//g.setColor(Color.cyan);
+						//g.fillOval(xpos, ypos, (MY_WIDTH/nq), (MY_WIDTH/nq));
+						g.drawImage(img, xpos, ypos, width, width, null);
+					}
+				
+					xpos = xpos + width;
+					
+					
+				}
+				ypos = ypos + width;
+				xpos = 0;
+			}
+		}
+	}
+}
+
+================
+QueensFrame.java
+================
+
+package queens;
+
+import java.awt.FlowLayout;
+
+import javax.swing.JFrame;
+import javax.swing.WindowConstants;
+
+public class QueenFrame {
+	
+	public static final int PANEL_WIDTH = 750;
+	public static final int PANEL_HEIGHT = 750;
+	
+	public static void main(String[] args) {
+		QueensSolverEngine engine = new QueensSolverEngineImpl();
+		QueensViewImpl controller = new QueensViewImpl(engine);
+		JFrame frame = new JFrame("Queens Solver");
+		
+		frame.setLayout(new FlowLayout());
+		
+		frame.getContentPane().add(controller);
+		frame.setSize(PANEL_WIDTH, PANEL_HEIGHT);
+		
+		frame.setResizable(false);
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		
+		frame.setVisible(true);
+		
+	}
+
+}
+
+================
+QueensSolverEngine.java
+================
+
+
+package queens;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
+
+public class QueensSolverEngineImpl implements QueensSolverEngine {
+	
+	private boolean[] rows;
+	private int[] position;
+	private boolean[] rightDiag;
+	private boolean[] leftDiag;
+	private int numQueens;
+	private int numSolutions;
+	
+	private boolean stopFlag;
+	
+    private EventListenerList eventListenerList;
+    private final ChangeEvent CHANGE_EVENT = new ChangeEvent(this);
+	
+	public QueensSolverEngineImpl() {
+	
+        this.eventListenerList = new EventListenerList();
+        resetSolver(4);
+        
+	}
+	
+	public QueensSolverEngineImpl(int nq) {
+		
+        this.eventListenerList = new EventListenerList();
+        resetSolver(nq);
+        
+	}
+
+    // finds all solutions to the nqueens problem for current number of queens
+	public void solveAll() {
+		
+		setStopFlag(false);
+		solve(0);
+		
+	}
+	//pre: numberQueens >= MIN_QUEENS && numberQueens <= MAX_QUEENS
+	// throws RuntimeException if numberQueens out of range
+	public void resetSolver(int nq) {
+		
+		if (nq < MIN_QUEENS || nq > MAX_QUEENS) {
+			throw new RuntimeException();
+		}
+		
+		setStopFlag(true);
+		
+		this.numQueens = nq;
+		this.numSolutions = 0;
+		this.rows = new boolean[numQueens];
+		this.position = new int[numQueens];
+		this.rightDiag = new boolean[2 * numQueens - 1];
+		this.leftDiag = new boolean[2 * numQueens - 1];
+		
+		for (int i = 0; i < numQueens; i++) {
+			rows[i] = false;
+			position[i] = -1;
+		}
+		
+		for (int i = 0; i < (numQueens * 2) - 1; i++) {
+			leftDiag[i] = false;
+			rightDiag[i] = false;
+		}
+		
+        this.fireChangeEvent(CHANGE_EVENT);
+	}
+
+	// returns number of solutions on this board
+	public int getNumSolutions() {
+		return this.numSolutions;
+	}
+
+	// sets a stop flag to true in order to stop the solveAll from solving, or false to allow it to execute
+	public void setStopFlag(boolean flag) {
+		
+		this.stopFlag = flag;
+		
+	}
+
+	// returns array of queen positions on board, index is row number, value at index is column number 
+	// length of return value is exactly the numberQueens currently set for this engine
+	public int[] getQueenPositions() {
+		int[] array = new int[this.getNumQueens()];
+		
+		for (int i = 0; i < this.getNumQueens(); i++) {
+			array[i] = this.position[i];
+		}
+		
+		return array;
+	}
+
+	// returns number of queens being solved for
+	public int getNumQueens() {
+		return this.numQueens;
+	}
+
+	public void addChangeListener(ChangeListener changeListener) {
+        eventListenerList.add(ChangeListener.class, changeListener);
+		
+	}
+
+	public void removeChangeListener(ChangeListener changeListener) {
+        eventListenerList.remove(ChangeListener.class, changeListener);
+		
+	}
+
+	public void fireChangeEvent(ChangeEvent event) {
+		// Guaranteed to return a non-null array
+		Object[] listeners = eventListenerList.getListenerList();
+		// Process the listeners last to first, notifying
+		// those that are interested in this event
+		for (int i = listeners.length-2; i>=0; i-=2) {
+			if (listeners[i]==ChangeListener.class) {
+				((ChangeListener)listeners[i+1]).stateChanged(event);
+			}
+		}
+	}
+	
+	//Returns string
+	public String toString() {
+		String temp = "Solving for " + this.numQueens + " queens \n";
+		
+		for(int i = 0; i < this.numQueens; i++) {
+			for (int k = 0; k < this.numQueens; k++) {
+				if (position[i] == k) {
+					temp += "Q";
+				}
+				else {
+					temp += "X";
+				}
+			}
+			temp += "\n";
+		}
+		return temp;
+	}
+	
+	/*
+	 * Private Stuff
+	 */
+	
+	private boolean isSafe(int row, int col) {
+		if (rows[row] == true) {
+			return false;
+		}
+		
+		if (this.leftDiag[(row - col) + (numQueens - 1)] == true) {
+			return false;
+		}
+		if (this.rightDiag[(row + col)]) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private int findNextRow(int row, int col) {
+		int start = row;
+		while (start < numQueens) {
+			if (isSafe(start, col)) {
+				return start;
+			}
+		start++;
+		}
+	return start;
+	}
+	
+	private void solve (int col) {
+		 
+		if (stopFlag == true) {
+			return;
+		}
+		// check to see if we are at the base case, a queen 
+		//  in all columns of the board (same size as numqueens)
+		if (col >= numQueens) {
+			
+			this.numSolutions ++;  // count a solution and add code to update frame's count
+			showBoard();  // will redraw the board with the solution 
+			return;  // get out of the recursion.
+		}
+		// if we get here we try to solve for current column
+
+		int row = findNextRow(0,col); // get a row for current col
+		
+		while(row < numQueens && stopFlag == false) {  // while we get a good row 
+			
+			placeQueen(row, col); // put the queen at row,col on the board
+			solve(col+1);   // try the next col since we got a good row
+			removeQueen(row,col);  // remove Queen at row,col and try another row
+			row = findNextRow(row+1,col);   // try a different row same col
+		} // end of while
+	} // end of solve
+	
+	private void placeQueen(int row, int col) {
+		rows[row] = true;
+		position[row] = col;
+		
+		this.leftDiag[(row - col) + (numQueens - 1)] = true;
+		this.rightDiag[(row + col)] = true;
+		
+        this.fireChangeEvent(CHANGE_EVENT);
+	}
+	
+	private void removeQueen(int row, int col) {
+		rows[row] = false;
+		position[row] = -1;
+		
+		this.leftDiag[(row - col) + (numQueens - 1)] = false;
+		this.rightDiag[(row + col)] = false;
+		
+        this.fireChangeEvent(CHANGE_EVENT);
+	}
+	
+	private void showBoard() {
+		//System.out.println(this);
+	}
+
+}

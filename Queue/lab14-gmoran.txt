@@ -1,0 +1,213 @@
+=============
+Guillermo Moran
+April 28 2016
+Lab 14
+=============
+
+=============
+CONSOLE
+=============
+
+****  BEGIN OUTPUT for willie_m5296  ****
+Now Testing QueueEngine...
+SUCCESS RuntimeException thrown when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling add() on a full queue
+SUCCESS RuntimeException thrown and caught when calling add() on a full queue
+SUCCESS, testQueueEngine Finished
+SUCCESS RuntimeException thrown and caught when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getFirst() on an empty queue
+SUCCESS, testQueueEngine Finished
+****  END OUTPUT for willie_m5296  ****
+****  BEGIN OUTPUT for willie_m5296  ****
+Now testing QueueList...
+SUCCESS RuntimeException thrown and caught when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getLast() on an empty queue
+SUCCESS, testQueueEngine Finished
+SUCCESS RuntimeException thrown and caught when calling remove() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling remove() on an empty queue
+SUCCESS, testQueueList Finished
+SUCCESS RuntimeException thrown and caught when add() on a full queue
+SUCCESS RuntimeException thrown and caught when add() on a full queue
+****  END OUTPUT for willie_m5296  ****
+
+=============
+QueueListImpl.java
+=============
+
+package queue;
+
+public class QueueListImpl<T> implements QueueList<T> {
+	
+	private int count;
+	private Node<T> first;
+	private Node<T> last;
+
+	public QueueListImpl() {
+		this.clear();
+	}
+	
+	public int size() {
+		// TODO Auto-generated method stub
+		return this.count;
+	}
+
+	public void add (T item) {
+		if (this.size() == MAX_ELEMENTS) {
+			throw new RuntimeException();
+		}
+		
+		Node<T> node = new Node<T>();
+		node.data = item;
+
+		if (last != null) {
+			last.link = node;
+			last = node;
+			count++;	
+		}
+
+		else {
+			last = node;
+			first = node;
+			count++;
+		}
+	}
+
+
+	public T remove() {
+		if (this.size() == 0) {
+			throw new RuntimeException();
+		}
+		T retValue = this.first.data;
+		this.first = this.first.link;
+
+		if (this.first == null) {
+			this.last = null;
+		}
+
+		this.count-- ;
+		return retValue;
+	}
+
+	@Override
+	public T getFirst() {
+		return this.first.data;
+	}
+
+	
+	public T getLast() {
+		return this.last.data;
+	}
+
+
+	public void clear() {
+		this.count = 0;
+		this.first = null;
+		this.last = null;
+	}
+
+	public String toString() {
+		String temp = "";
+
+		if (this.count == 0) {
+			return "The queue is empty";
+		}
+
+		Node<T> node = this.first;
+		while (node != null) {
+			temp += node.data + "\n";
+			node = node.link;
+		}
+		return temp;
+	}
+
+}
+
+=============
+QueueEngineImpl.java
+=============
+
+package queue;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
+
+public class QueueEngineImpl implements QueueEngine {
+	
+	private QueueList<String> myQueue;
+	private EventListenerList eventListenerList;
+    private final ChangeEvent CHANGE_EVENT = new ChangeEvent(this);
+
+	public QueueEngineImpl() {
+		this.eventListenerList = new EventListenerList();
+		this.myQueue = new QueueListImpl<String>();
+	}
+	
+	@Override
+	public void add(String item) {
+		myQueue.add(item);
+        this.fireChangeEvent(CHANGE_EVENT);
+	}
+
+	@Override
+	public String remove() {
+        String ret = myQueue.remove();
+        this.fireChangeEvent(CHANGE_EVENT);
+        return ret;
+		
+	}
+
+	@Override
+	public String getFirst() {
+		return myQueue.getFirst();
+	}
+
+	@Override
+	public String getLast() {
+		return myQueue.getLast();
+	}
+
+	@Override
+	public int size() {
+		return myQueue.size();
+	}
+
+	public void clear() {
+        
+		myQueue.clear();
+		this.fireChangeEvent(CHANGE_EVENT);
+		
+	}
+	
+	public String toString() {
+		return myQueue.toString();
+	}
+
+	public void addChangeListener(ChangeListener changeListener) {
+        eventListenerList.add(ChangeListener.class, changeListener);
+		
+	}
+
+	public void removeChangeListener(ChangeListener changeListener) {
+        eventListenerList.remove(ChangeListener.class, changeListener);
+		
+	}
+
+	public void fireChangeEvent(ChangeEvent event) {
+		// Guaranteed to return a non-null array
+		Object[] listeners = eventListenerList.getListenerList();
+		// Process the listeners last to first, notifying
+		// those that are interested in this event
+		for (int i = listeners.length-2; i>=0; i-=2) {
+			if (listeners[i]==ChangeListener.class) {
+				((ChangeListener)listeners[i+1]).stateChanged(event);
+			}
+		}
+	}
+
+}

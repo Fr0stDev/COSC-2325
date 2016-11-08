@@ -1,0 +1,513 @@
+================
+Guillermo Moran
+Assignment 8
+May 1 2016
+================
+
+================
+QueueListImpl.java
+================
+
+package queue;
+
+public class QueueListImpl<T> implements QueueList<T> {
+	
+	private int count;
+	private Node<T> first;
+	private Node<T> last;
+
+	public QueueListImpl() {
+		this.clear();
+	}
+	
+	/** pre: none
+	 * post: returns  number of elements on this Queue
+	 */
+	public int size() {
+		// TODO Auto-generated method stub
+		return this.count;
+	}
+
+	/** places item at the end of this Queue
+	 *pre: param element - item to be added
+	 *post: element is at the end of the queue throws new RuntimeException on full queue
+	 * @throws - RuntimeException if attempt to add to a full queue
+	 */
+	public void add (T item) {
+		if (this.size() == MAX_ELEMENTS) {
+			throw new RuntimeException();
+		}
+		
+		Node<T> node = new Node<T>();
+		node.data = item;
+
+		if (last != null) {
+			last.link = node;
+			last = node;
+			count++;	
+		}
+
+		else {
+			last = node;
+			first = node;
+			count++;
+		}
+	}
+
+	/** pre: queue is NOT empty
+	   post: removes and returns the front item from this Queue if this Queue is
+	 *      not empty. 
+	 * @throws - RuntimeException if attempt to remove from an empty queue
+	 * @return - the object that was removed from the front of the queue.
+	 */
+	public T remove() {
+		if (this.size() == 0) {
+			throw new RuntimeException();
+		}
+		T retValue = this.first.data;
+		this.first = this.first.link;
+
+		if (this.first == null) {
+			this.last = null;
+		}
+
+		this.count-- ;
+		return retValue;
+	}
+
+	/** pre: queue is not empty
+	  *returns the front item from this Queue if this Queue is
+	 * not empty.  DOES NOT REMOVE IT.
+	 * @throws - RuntimeException if attempt to getFirst for an empty queue
+	 * @return - object that is currently at the front of the queue
+	 */
+	public T getFirst() {
+		return this.first.data;
+	}
+
+	/** pre: queue is not empty
+	  *returns the last item from this Queue if this Queue is
+	 * not empty.  DOES NOT REMOVE IT.
+	 * @throws - RuntimeException if attempt to getLast for an empty queue
+	 * @return - object that is currently at the end of the queue
+	 */
+	public T getLast() {
+		return this.last.data;
+	}
+
+	/** pre: none
+     *post: removes all items from this Queue, making it empty.
+	 */
+	public void clear() {
+		this.count = 0;
+		this.first = null;
+		this.last = null;
+	}
+
+	/**
+	 * To String.
+	 */
+	public String toString() {
+		String temp = "";
+
+		if (this.count == 0) {
+			return "The queue is empty";
+		}
+
+		Node<T> node = this.first;
+		while (node != null) {
+			temp += node.data + "\n";
+			node = node.link;
+		}
+		return temp;
+	}
+
+}
+
+================
+QueueFrame.java
+================
+
+package queue;
+import java.awt.FlowLayout;
+
+import javax.swing.JFrame;
+import javax.swing.WindowConstants;
+
+public class QueueFrame {
+	
+	public static final int PANEL_WIDTH = 750;
+	public static final int PANEL_HEIGHT = 400;
+	
+	public static void main(String[] args) {
+		QueueEngine engine = new QueueEngineImpl();
+		QueueViewImpl controller = new QueueViewImpl(engine);
+		JFrame frame = new JFrame("Queue");
+		
+		frame.setLayout(new FlowLayout());
+		
+		frame.getContentPane().add(controller);
+		frame.setSize(PANEL_WIDTH, PANEL_HEIGHT);
+		
+		frame.setResizable(false);
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		
+		frame.setVisible(true);
+		
+	}
+
+}
+
+================
+QueueEngineImpl.java
+================
+
+package queue;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.EventListenerList;
+
+public class QueueEngineImpl implements QueueEngine {
+	
+	private QueueList<String> myQueue;
+	private EventListenerList eventListenerList;
+    private final ChangeEvent CHANGE_EVENT = new ChangeEvent(this);
+
+	public QueueEngineImpl() {
+		this.eventListenerList = new EventListenerList();
+		this.myQueue = new QueueListImpl<String>();
+	}
+	
+	//pre: the queueEngine is not full if so throws RuntimeException
+    //post: item is added to the rear (end) of the queueEngine
+	public void add(String item) {
+		myQueue.add(item);
+        this.fireChangeEvent(CHANGE_EVENT);
+	}
+
+	//pre: this queueEngine is not empty
+	//post: the first item is removed and returned throws new RuntimeException on empty queue
+	public String remove() {
+        String ret = myQueue.remove();
+        this.fireChangeEvent(CHANGE_EVENT);
+        return ret;
+		
+	}
+
+	//pre: this queueEngine is not empty
+	//post: the first item is returned, but NOT REMOVED throws new RuntimeException on empty queue
+	public String getFirst() {
+		return myQueue.getFirst();
+	}
+
+	//pre: this queueEngine is not empty
+	//post: the LAST item is returned, but NOT REMOVED throws new RuntimeException on empty queue
+	public String getLast() {
+		return myQueue.getLast();
+	}
+
+	//pre: none
+	//post: returns number of items in this queueEngine
+	public int size() {
+		return myQueue.size();
+	}
+
+	//pre: none
+	//post: all items removed from this queueEngine, the size is 0
+	public void clear() {
+        
+		myQueue.clear();
+		this.fireChangeEvent(CHANGE_EVENT);
+		
+	}
+	
+	// To String
+	public String toString() {
+		return myQueue.toString();
+	}
+
+	// boiler plate standard methods for use with a model - adds change listener instance to this model's listener list
+	public void addChangeListener(ChangeListener changeListener) {
+        eventListenerList.add(ChangeListener.class, changeListener);
+		
+	}
+
+	// removes change listener from this model's listener list.
+	public void removeChangeListener(ChangeListener changeListener) {
+        eventListenerList.remove(ChangeListener.class, changeListener);
+		
+	}
+
+	// raises or fires off a change event so that any listeners can hear it and thus update their situation (ie the view)
+	public void fireChangeEvent(ChangeEvent event) {
+		// Guaranteed to return a non-null array
+		Object[] listeners = eventListenerList.getListenerList();
+		// Process the listeners last to first, notifying
+		// those that are interested in this event
+		for (int i = listeners.length-2; i>=0; i-=2) {
+			if (listeners[i]==ChangeListener.class) {
+				((ChangeListener)listeners[i+1]).stateChanged(event);
+			}
+		}
+	}
+}
+
+================
+QueueViewImpl.java
+================
+
+package queue;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import java.util.Scanner;
+
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+
+
+
+public class QueueViewImpl extends JPanel {
+	
+	private ChangeListener changeListener;
+	private QueueEngine engine;
+	
+	private JButton addBtn;
+	private JButton removeBtn;
+	private JButton clearBtn;
+
+	
+	private JTextField countField;
+	private String currentCount;
+	
+	private JPanel buttonPanel;
+	private QueuePanel qPanel;
+	
+	
+	public QueueViewImpl(QueueEngine qEngine) {
+		
+		super();
+		this.setPreferredSize(new Dimension(QueueFrame.PANEL_WIDTH-20, QueueFrame.PANEL_HEIGHT - 100));
+		this.setLayout(new BorderLayout());
+		this.engine = qEngine;
+		
+		changeListener = new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				update();
+			}
+		};
+		engine.addChangeListener(changeListener);
+		init();
+	}
+	
+	public void init() {
+		
+		this.buttonPanel = new JPanel();
+		this.buttonPanel.setLayout(new GridLayout(2,2));
+		
+		this.currentCount = "Items in queue: 0";
+		
+		this.addBtn = new JButton("Add");
+		this.removeBtn = new JButton("Remove");
+		this.clearBtn = new JButton("Clear");
+
+		this.countField = new JTextField(currentCount);
+		
+		this.qPanel = new QueuePanel();
+		
+		buttonPanel.add(addBtn);
+		buttonPanel.add(clearBtn);
+		buttonPanel.add(removeBtn);
+		buttonPanel.add(countField);
+		
+		initButtons();
+		
+		countField.setBackground(null);
+		countField.setEditable(false);
+		
+		this.add(buttonPanel, BorderLayout.NORTH);
+		this.add(qPanel, BorderLayout.CENTER);
+		
+	}
+	
+	private void initButtons() {
+		
+		addBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+
+				String item = JOptionPane.showInputDialog(null, "Enter value to add to the queue", "");
+				if(item==null) {}
+					//actionText="Push cancelled...no push";
+				else
+				{
+					try {
+						engine.add(item);
+						String status = "Just pushed " + item + " into the queue.";
+						JOptionPane.showMessageDialog(null, status, "InfoBox: " + "Queue", JOptionPane.INFORMATION_MESSAGE);
+					}
+					catch (RuntimeException error) {
+						JOptionPane.showMessageDialog(null, "Queue is full.", "InfoBox: " + "Queue", JOptionPane.INFORMATION_MESSAGE);
+					}
+				}				
+				
+				update();
+			}
+		});
+		
+		removeBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+
+				int count = engine.size();
+				
+				if (count == 0) {
+					JOptionPane.showMessageDialog(null, "The queue is empty.", "InfoBox: " + "Queue", JOptionPane.INFORMATION_MESSAGE);
+				}
+				else {
+					String ret = engine.remove();
+					JOptionPane.showMessageDialog(null, "Item Removed: " + ret, "InfoBox: " + "Queue", JOptionPane.INFORMATION_MESSAGE);
+				}
+				
+				update();
+	
+			}
+		});
+		
+		clearBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+
+				int count = engine.size();
+				
+				if (count == 0) {
+					JOptionPane.showMessageDialog(null, "The queue is already empty.", "InfoBox: " + "Queue", JOptionPane.INFORMATION_MESSAGE);
+				}
+				else {
+					engine.clear();
+					JOptionPane.showMessageDialog(null, "Queue Cleared. ", "InfoBox: " + "Queue", JOptionPane.INFORMATION_MESSAGE);
+				}
+				
+				update();
+	
+			}
+		});
+		
+	}
+	
+	private void update() {
+		
+		int count = engine.size();
+		String countStr = Integer.toString(count);
+		currentCount = "Items in queue: " + countStr;
+		countField.setText(currentCount);
+		
+		repaint();
+	}
+	
+	private class QueuePanel extends JPanel
+	{
+		final int MYWIDTH=QueueFrame.PANEL_WIDTH / QueueEngine.MAX;
+		final int MYHEIGHT=QueueFrame.PANEL_HEIGHT-150;
+		public QueuePanel()
+		{ 
+			super();
+	
+			this.setPreferredSize(new Dimension(MYWIDTH, MYHEIGHT));
+			this.setBackground(Color.RED);
+			this.repaint();
+		}
+		public void paintComponent(Graphics g)
+		{
+			String theStack = engine.toString();
+			Scanner input = new Scanner(theStack);
+			g.setFont(new Font("default", Font.BOLD, 16));
+			int size = engine.size();
+			
+			if(size == 0)
+			{
+				g.drawString("Queue is EMPTY", 20,  20);
+				return;
+			}
+			
+			int xpos = (QueueFrame.PANEL_WIDTH / QueueEngine.MAX) / QueueEngine.MAX;
+			int ypos = MYHEIGHT/3;
+			int width = (QueueFrame.PANEL_WIDTH / QueueEngine.MAX) - 30;
+			int height = width;
+			
+			
+			for(int i=0; i<QueueEngine.MAX; i++)
+			{   
+				g.drawRect(xpos, ypos, width, height);
+				xpos = xpos + (width);
+			}
+			
+			xpos = ((QueueFrame.PANEL_WIDTH / QueueEngine.MAX) / QueueEngine.MAX) * 2;
+			width = (QueueFrame.PANEL_WIDTH / QueueEngine.MAX) - 30;
+			for(int i=0; i<size; i++)
+			{  
+			
+				String out = input.nextLine();
+				g.drawString(out, xpos+20, ypos*2);
+				
+				
+				if (engine.size() >= 1 && i == 0) {
+					String first = "First";
+					g.drawString(first, xpos+20, ypos - 10);
+				}
+				
+				if (engine.size() >= 2  && i == (engine.size() - 1)) {
+					String last = "Last";
+					g.drawString(last, xpos+20, ypos - 10);
+				}
+				
+				xpos = xpos + width;
+			}
+			
+		}
+
+	}
+
+}
+
+================
+CONSOLE OUTPUT
+================
+
+****  BEGIN OUTPUT for willie_m5296  ****
+Now Testing QueueEngine...
+SUCCESS RuntimeException thrown when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling add() on a full queue
+SUCCESS RuntimeException thrown and caught when calling add() on a full queue
+SUCCESS, testQueueEngine Finished
+SUCCESS RuntimeException thrown and caught when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getFirst() on an empty queue
+SUCCESS, testQueueEngine Finished
+****  END OUTPUT for willie_m5296  ****
+****  BEGIN OUTPUT for willie_m5296  ****
+Now testing QueueList...
+SUCCESS RuntimeException thrown and caught when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getFirst() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getLast() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling getLast() on an empty queue
+SUCCESS, testQueueEngine Finished
+SUCCESS RuntimeException thrown and caught when calling remove() on an empty queue
+SUCCESS RuntimeException thrown and caught when calling remove() on an empty queue
+SUCCESS, testQueueList Finished
+SUCCESS RuntimeException thrown and caught when add() on a full queue
+SUCCESS RuntimeException thrown and caught when add() on a full queue
+****  END OUTPUT for willie_m5296  ****

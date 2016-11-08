@@ -1,0 +1,232 @@
+========================
+Guillermo Moran
+April 21 2016
+Lab 13
+========================
+
+
+========================
+QueensSolverEngine
+========================
+
+
+package queens;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+public class QueensSolverEngineImpl implements QueensSolverEngine {
+	
+	private boolean[] rows;
+	private int[] position;
+	private boolean[] rightDiag;
+	private boolean[] leftDiag;
+	private int numQueens;
+	private int numSolutions;
+	
+	private boolean stopFlag;
+	
+	public QueensSolverEngineImpl(int nq) {
+		
+		resetSolver(nq);
+		
+	}
+
+    // finds all solutions to the nqueens problem for current number of queens
+	public void solveAll() {
+		
+		solve(0);
+		
+	}
+	//pre: numberQueens >= MIN_QUEENS && numberQueens <= MAX_QUEENS
+	// throws RuntimeException if numberQueens out of range
+	public void resetSolver(int nq) {
+		
+		if (nq < MIN_QUEENS || nq > MAX_QUEENS) {
+			throw new RuntimeException();
+		}
+		
+		this.numQueens = nq;
+		this.numSolutions = 0;
+		this.rows = new boolean[numQueens];
+		this.position = new int[numQueens];
+		this.rightDiag = new boolean[2 * numQueens - 1];
+		this.leftDiag = new boolean[2 * numQueens - 1];
+		
+		for (int i = 0; i < numQueens; i++) {
+			rows[i] = false;
+			position[i] = -1;
+		}
+		
+		for (int i = 0; i < (numQueens * 2) - 1; i++) {
+			leftDiag[i] = false;
+			rightDiag[i] = false;
+		}
+	}
+
+	// returns number of solutions on this board
+	public int getNumSolutions() {
+		return this.numSolutions;
+	}
+
+	// sets a stop flag to true in order to stop the solveAll from solving, or false to allow it to execute
+	public void setStopFlag(boolean flag) {
+		
+		this.stopFlag = flag;
+		
+	}
+
+	// returns array of queen positions on board, index is row number, value at index is column number 
+	// length of return value is exactly the numberQueens currently set for this engine
+	public int[] getQueenPositions() {
+		int[] array = new int[this.getNumQueens()];
+		
+		for (int i = 0; i < this.getNumQueens(); i++) {
+			array[i] = this.position[i];
+		}
+		
+		return array;
+	}
+
+	// returns number of queens being solved for
+	public int getNumQueens() {
+		return this.numQueens;
+	}
+
+	@Override
+	public void addChangeListener(ChangeListener stackEngineListener) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removeChangeListener(ChangeListener stackEngineListener) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void fireChangeEvent(ChangeEvent event) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	//Returns string
+	public String toString() {
+		String temp = "Solving for " + this.numQueens + " queens \n";
+		
+		for(int i = 0; i < this.numQueens; i++) {
+			for (int k = 0; k < this.numQueens; k++) {
+				if (position[i] == k) {
+					temp += "Q";
+				}
+				else {
+					temp += "X";
+				}
+			}
+			temp += "\n";
+		}
+		return temp;
+	}
+	
+	/*
+	 * Private Stuff
+	 */
+	
+	private boolean isSafe(int row, int col) {
+		if (rows[row] == true) {
+			return false;
+		}
+		
+		if (this.leftDiag[(row - col) + (numQueens - 1)] == true) {
+			return false;
+		}
+		if (this.rightDiag[(row + col)]) {
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private int findNextRow(int row, int col) {
+		int start = row;
+		while (start < numQueens) {
+			if (isSafe(start, col)) {
+				return start;
+			}
+		start++;
+		}
+	return start;
+	}
+	
+	private void solve (int col) {
+		 
+		//if (stopFlag == true) {
+			// return;
+		//}
+		// check to see if we are at the base case, a queen 
+		//  in all columns of the board (same size as numqueens)
+		if (col >= numQueens) {
+			
+			this.numSolutions ++;  // count a solution and add code to update frame's count
+			showBoard();  // will redraw the board with the solution 
+			return;  // get out of the recursion.
+		}
+		// if we get here we try to solve for current column
+
+		int row = findNextRow(0,col); // get a row for current col
+		
+		while(row < numQueens && stopFlag == false) {  // while we get a good row 
+			
+			placeQueen(row, col); // put the queen at row,col on the board
+			solve(col+1);   // try the next col since we got a good row
+			removeQueen(row,col);  // remove Queen at row,col and try another row
+			row = findNextRow(row+1,col);   // try a different row same col
+		} // end of while
+	} // end of solve
+	
+	private void placeQueen(int row, int col) {
+		rows[row] = true;
+		position[row] = col;
+		
+		this.leftDiag[(row - col) + (numQueens - 1)] = true;
+		this.rightDiag[(row + col)] = true;
+		
+		
+	}
+	
+	private void removeQueen(int row, int col) {
+		rows[row] = false;
+		position[row] = -1;
+		
+		this.leftDiag[(row - col) + (numQueens - 1)] = false;
+		this.rightDiag[(row + col)] = false;
+	}
+	
+	private void showBoard() {
+		System.out.println(this);
+	}
+
+}
+
+========================
+CONSOLE
+========================
+
+
+****  BEGIN OUTPUT for willie_m5296  ****
+SUCCESS number of solutions for 8 queens is 92
+SUCCESS number of solutions for 6 queens is 4
+SUCCESS number of solutions for 7 queens is 40
+****  END OUTPUT for willie_m5296  ****
+****  BEGIN OUTPUT for willie_m5296  ****
+SUCCESS: RuntimeException -- number of queens: 25  is out of range must be between 4 and 12
+SUCCESS: RuntimeException -- number of queens: 3  is out of range must be between 4 and 12
+SUCCESS: RuntimeException -- number of queens: 0  is out of range must be between 4 and 12
+****  END OUTPUT for willie_m5296  ****
+****  BEGIN OUTPUT for willie_m5296  ****
+SUCCESS: RuntimeException resetSolver must receive number of queens
+between 4 and 12 inclusive when resetting received: 13 as number of queens.
+SUCCESS: RuntimeException resetSolver must receive number of queens
+between 4 and 12 inclusive when resetting, received: 3 as number of queens.
+****  END OUTPUT for willie_m5296  ****
